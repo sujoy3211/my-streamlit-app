@@ -1,25 +1,37 @@
 import streamlit as st
-import pickle
+import pandas as pd
 import numpy as np
+import pickle
+import os
 
-# Load model
-model = pickle.load(open("rain_model.pkl", "rb"))
+# Get the absolute path of the folder containing this script
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-st.title("🌧️ Rainfall Prediction System")
-st.write("Enter today's weather data to predict if it will rain tomorrow.")
+# Full path to the model file
+model_path = os.path.join(BASE_DIR, "rain_model.pkl")
 
-MinTemp = st.number_input("Minimum Temperature (°C)", value=15.0)
-MaxTemp = st.number_input("Maximum Temperature (°C)", value=25.0)
-Rainfall = st.number_input("Rainfall Today (mm)", value=0.0)
-Humidity3pm = st.number_input("Humidity at 3 PM (%)", value=60.0)
-Pressure9am = st.number_input("Pressure at 9 AM (hPa)", value=1010.0)
-Temp3pm = st.number_input("Temperature at 3 PM (°C)", value=22.0)
+# Load the model safely
+try:
+    with open(model_path, "rb") as f:
+        model = pickle.load(f)
+except FileNotFoundError:
+    st.error("Model file not found! Make sure 'rain_model.pkl' is in the app folder.")
+    st.stop()
 
-if st.button("Predict"):
-    data = np.array([[MinTemp, MaxTemp, Rainfall, Humidity3pm, Pressure9am, Temp3pm]])
-    output = model.predict(data)[0]
-    
-    if output == "Yes":
-        st.error("🌧️ Rain is likely tomorrow!")
-    else:
-        st.success("☀️ No rain expected tomorrow.")
+st.title("Rainfall Prediction App")
+
+# Example input form
+st.header("Enter Weather Parameters:")
+temperature = st.number_input("Temperature (°C)")
+humidity = st.number_input("Humidity (%)")
+pressure = st.number_input("Pressure (hPa)")
+
+# Prediction button
+if st.button("Predict Rainfall"):
+    try:
+        # Assuming the model expects inputs as a 2D array
+        input_data = np.array([[temperature, humidity, pressure]])
+        prediction = model.predict(input_data)
+        st.success(f"Predicted Rainfall: {prediction[0]}")
+    except Exception as e:
+        st.error(f"Prediction failed: {e}")
